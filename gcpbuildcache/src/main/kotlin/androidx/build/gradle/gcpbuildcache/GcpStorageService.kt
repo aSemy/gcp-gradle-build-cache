@@ -28,6 +28,8 @@ import com.google.cloud.storage.*
 import org.gradle.api.GradleException
 import org.gradle.api.logging.Logging
 import java.io.InputStream
+import java.time.Clock
+import java.time.OffsetDateTime
 
 /**
  * An implementation of the [StorageService] that is backed by Google Cloud Storage.
@@ -39,7 +41,8 @@ internal class GcpStorageService(
     messageOnAuthenticationFailure: String,
     override val isPush: Boolean,
     override val isEnabled: Boolean,
-    private val sizeThreshold: Long = BLOB_SIZE_THRESHOLD
+    private val sizeThreshold: Long = BLOB_SIZE_THRESHOLD,
+    private val clock: Clock = Clock.systemDefaultZone(),
 ) : StorageService {
 
     private val storageOptions by lazy {
@@ -56,7 +59,7 @@ internal class GcpStorageService(
         return load(storageOptions, blobId, sizeThreshold)
     }
 
-    override fun store(cacheKey: String, contents: ByteArray): Boolean {
+    override fun store(cacheKey: String, contents: InputStream, size: Long): Boolean {
         if (!isEnabled) {
             logger.info("Not Enabled")
             return false
@@ -69,7 +72,7 @@ internal class GcpStorageService(
         val blobId = BlobId.of(bucketName, cacheKey)
 
         logger.info("Storing $cacheKey into ${blobId.name}")
-        return store(storageOptions, blobId, contents)
+        return store(storageOptions, blobId, contents, OffsetDateTime.now(clock))
     }
 
     override fun delete(cacheKey: String): Boolean {
@@ -143,11 +146,18 @@ internal class GcpStorageService(
             }
         }
 
-        private fun store(storage: StorageOptions?, blobId: BlobId, contents: ByteArray): Boolean {
+        private fun store(
+            storage: StorageOptions?,
+            blobId: BlobId,
+            contents: InputStream,
+            currentDateTime: OffsetDateTime,
+        ): Boolean {
             if (storage == null) return false
-            val blobInfo = BlobInfo.newBuilder(blobId).build()
+            val blobInfo = BlobInfo.newBuilder(blobId)
+                .setCustomTimeOffsetDateTime(currentDateTime)
+                .build()
             return try {
-                storage.service.createFrom(blobInfo, contents.inputStream())
+                storage.service.createFrom(blobInfo, contents)
                 true
             } catch (storageException: StorageException) {
                 logger.debug("Unable to store Blob ($blobId)", storageException)

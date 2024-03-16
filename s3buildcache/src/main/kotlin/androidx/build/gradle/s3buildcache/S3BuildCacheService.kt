@@ -27,7 +27,8 @@ import org.gradle.caching.BuildCacheService
 import software.amazon.awssdk.auth.credentials.*
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
-import java.io.ByteArrayOutputStream
+import java.io.PipedInputStream
+import java.io.PipedOutputStream
 
 /**
  * The service that responds to Gradle's request to load and store results for a given
@@ -69,11 +70,12 @@ class S3BuildCacheService(
         if (writer.size == 0L) return // do not store empty entries into the cache
         logger.info("Storing ${key.blobKey()}")
         val cacheKey = key.blobKey()
-        val output = ByteArrayOutputStream()
-        output.use {
-            writer.writeTo(output)
-        }
-        storageService.store(cacheKey, output.toByteArray())
+
+        val incoming = PipedOutputStream()
+        writer.writeTo(incoming)
+        val contents = PipedInputStream(incoming)
+
+        storageService.store(cacheKey, contents, writer.size)
     }
 
     override fun close() {

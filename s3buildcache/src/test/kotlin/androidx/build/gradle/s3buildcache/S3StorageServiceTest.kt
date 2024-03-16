@@ -17,8 +17,10 @@
 
 package androidx.build.gradle.s3buildcache
 
+import androidx.build.gradle.core.StorageService
 import com.adobe.testing.s3mock.S3MockApplication
 import com.adobe.testing.s3mock.S3MockApplication.*
+import okio.utf8Size
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -71,7 +73,7 @@ class S3StorageServiceTest {
         storageService.use {
             val cacheKey = "test-store.txt"
             val contents = "The quick brown fox jumps over the lazy dog"
-            val result = storageService.store(cacheKey, contents.toByteArray(Charsets.UTF_8))
+            val result = storageService.store(cacheKey, contents.byteInputStream(Charsets.UTF_8), contents.utf8Size())
             assert(result)
             storageService.delete(cacheKey)
         }
@@ -91,8 +93,7 @@ class S3StorageServiceTest {
         storageService.use {
             val cacheKey = "test-load.txt"
             val contents = "The quick brown fox jumps over the lazy dog"
-            val bytes = contents.toByteArray(Charsets.UTF_8)
-            assert(storageService.store(cacheKey, bytes))
+            assert(storageService.store(cacheKey, contents))
             val input = storageService.load(cacheKey)!!
             val result = String(input.readAllBytes(), Charsets.UTF_8)
             assert(result == contents)
@@ -114,7 +115,7 @@ class S3StorageServiceTest {
         storageService.use {
             val cacheKey = "test-store-no-push.txt"
             val contents = "The quick brown fox jumps over the lazy dog"
-            val result = storageService.store(cacheKey, contents.toByteArray(Charsets.UTF_8))
+            val result = storageService.store(cacheKey, contents)
             assert(!result)
         }
     }
@@ -143,8 +144,7 @@ class S3StorageServiceTest {
             readOnlyStorageService.use {
                 val cacheKey = "test-load-no-push.txt"
                 val contents = "The quick brown fox jumps over the lazy dog"
-                val bytes = contents.toByteArray(Charsets.UTF_8)
-                assert(storageService.store(cacheKey, bytes))
+                assert(storageService.store(cacheKey, contents))
                 val input = readOnlyStorageService.load(cacheKey)!!
                 val result = String(input.readAllBytes(), Charsets.UTF_8)
                 assert(result == contents)
@@ -167,7 +167,7 @@ class S3StorageServiceTest {
         storageService.use {
             val cacheKey = "test-store-disabled.txt"
             val contents = "The quick brown fox jumps over the lazy dog"
-            val result = storageService.store(cacheKey, contents.toByteArray(Charsets.UTF_8))
+            val result = storageService.store(cacheKey, contents)
             assert(!result)
         }
     }
@@ -177,5 +177,11 @@ class S3StorageServiceTest {
         private const val REGION = "us-east-1"
         private const val BUCKET_NAME = "bucket-name"
         private const val SIZE_THRESHOLD = 50 * 1024 * 1024L
+
+        private fun StorageService.store(cacheKey: String, contents: String): Boolean {
+            return contents.byteInputStream(Charsets.UTF_8).use {
+                store(cacheKey, it, it.available().toLong())
+            }
+        }
     }
 }

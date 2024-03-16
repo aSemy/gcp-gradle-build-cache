@@ -17,6 +17,7 @@
 
 package androidx.build.gradle.gcpbuildcache
 
+import androidx.build.gradle.core.StorageService
 import org.junit.Assume.assumeNotNull
 import org.junit.Test
 import java.io.File
@@ -42,7 +43,7 @@ class GcpStorageServiceTest {
         storageService.use {
             val cacheKey = "test-store.txt"
             val contents = "The quick brown fox jumped over the lazy dog"
-            val result = storageService.store(cacheKey, contents.toByteArray(Charsets.UTF_8))
+            val result = storageService.store(cacheKey, contents)
             assert(result)
             storageService.delete(cacheKey)
         }
@@ -63,7 +64,7 @@ class GcpStorageServiceTest {
         storageService.use {
             val cacheKey = "test-load.txt"
             val contents = "The quick brown fox jumped over the lazy dog"
-            val bytes = contents.toByteArray(Charsets.UTF_8)
+            val bytes = contents
             assert(storageService.store(cacheKey, bytes))
             val input = storageService.load(cacheKey)!!
             val result = String(input.readAllBytes(), Charsets.UTF_8)
@@ -87,7 +88,7 @@ class GcpStorageServiceTest {
         storageService.use {
             val cacheKey = "test-store-no-push.txt"
             val contents = "The quick brown fox jumped over the lazy dog"
-            val result = storageService.store(cacheKey, contents.toByteArray(Charsets.UTF_8))
+            val result = storageService.store(cacheKey, contents)
             assert(!result)
         }
     }
@@ -117,7 +118,7 @@ class GcpStorageServiceTest {
             readOnlyStorageService.use {
                 val cacheKey = "test-load-no-push.txt"
                 val contents = "The quick brown fox jumped over the lazy dog"
-                val bytes = contents.toByteArray(Charsets.UTF_8)
+                val bytes = contents
                 assert(storageService.store(cacheKey, bytes))
                 val input = readOnlyStorageService.load(cacheKey)!!
                 val result = String(input.readAllBytes(), Charsets.UTF_8)
@@ -142,7 +143,7 @@ class GcpStorageServiceTest {
         storageService.use {
             val cacheKey = "test-store-disabled.txt"
             val contents = "The quick brown fox jumped over the lazy dog"
-            val result = storageService.store(cacheKey, contents.toByteArray(Charsets.UTF_8))
+            val result = storageService.store(cacheKey, contents)
             assert(!result)
         }
     }
@@ -153,5 +154,12 @@ class GcpStorageServiceTest {
 
         // The Bucket Name
         private const val BUCKET_NAME = "androidx-gradle-build-cache-test"
+
+        private fun StorageService.store(cacheKey: String, contents: String): Boolean {
+            val bytes = contents.byteInputStream(Charsets.UTF_8)
+            return bytes.use { input ->
+                store(cacheKey, input, bytes.available().toLong())
+            }
+        }
     }
 }

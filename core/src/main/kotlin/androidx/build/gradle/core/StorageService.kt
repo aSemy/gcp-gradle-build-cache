@@ -47,7 +47,7 @@ interface StorageService : Closeable {
      * Stores an entity into the storage.
      * @param cacheKey is the unique key that can identify a resource that needs to be stored.
      */
-    fun store(cacheKey: String, contents: ByteArray): Boolean
+    fun store(cacheKey: String, contents: InputStream, contentsLength: Long): Boolean
 
     /**
      * Removes an entity from storage.

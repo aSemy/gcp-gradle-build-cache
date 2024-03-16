@@ -45,7 +45,7 @@ class FileSystemStorageService(
         }
     }
 
-    override fun store(cacheKey: String, contents: ByteArray): Boolean {
+    override fun store(cacheKey: String, contents: InputStream, contentsLength: Long): Boolean {
         if (!isEnabled) {
             return false
         }
@@ -55,9 +55,8 @@ class FileSystemStorageService(
         }
 
         val file = File(location, cacheKey)
-        val output = file.outputStream()
-        output.use {
-            output.write(contents)
+        file.outputStream().use { output ->
+            contents.transferTo(output)
         }
         return true
     }

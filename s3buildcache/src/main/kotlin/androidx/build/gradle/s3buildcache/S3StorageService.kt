@@ -55,7 +55,7 @@ class S3StorageService(
         return load(client, request, sizeThreshold)
     }
 
-    override fun store(cacheKey: String, contents: ByteArray): Boolean {
+    override fun store(cacheKey: String, contents: InputStream, contentsLength: Long): Boolean {
         if (!isEnabled) {
             logger.info("Not Enabled")
             return false
@@ -66,8 +66,8 @@ class S3StorageService(
             return false
         }
 
-        if (contents.size > sizeThreshold) {
-            logger.info("Cache item $cacheKey size is ${contents.size} and it exceeds $sizeThreshold. Will skip storing")
+        if (contentsLength > sizeThreshold) {
+            logger.info("Cache item $cacheKey size is $contentsLength and it exceeds $sizeThreshold. Will skip storing")
             return false
         }
 
@@ -77,7 +77,7 @@ class S3StorageService(
             .storageClass(if (reducedRedundancy) REDUCED_REDUNDANCY else STANDARD)
             .build()
         logger.info("Storing $cacheKey via $request")
-        return store(client, request, contents)
+        return store(client, request, contents, contentsLength)
     }
 
     override fun delete(cacheKey: String): Boolean {
@@ -155,10 +155,12 @@ class S3StorageService(
         private fun store(
             client: S3Client,
             request: PutObjectRequest,
-            contents: ByteArray
+            contents: InputStream,
+            contentLength: Long
         ): Boolean {
             return try {
-                client.putObject(request, RequestBody.fromBytes(contents))
+                val body = RequestBody.fromInputStream(contents, contentLength)
+                client.putObject(request, body)
                 true
             } catch (e: Exception) {
                 logger.debug("Unable to store $request", e)

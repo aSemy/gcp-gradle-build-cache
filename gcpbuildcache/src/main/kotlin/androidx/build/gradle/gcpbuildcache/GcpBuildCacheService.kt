@@ -25,6 +25,8 @@ import org.gradle.caching.BuildCacheEntryWriter
 import org.gradle.caching.BuildCacheKey
 import org.gradle.caching.BuildCacheService
 import java.io.ByteArrayOutputStream
+import java.io.PipedInputStream
+import java.io.PipedOutputStream
 
 /**
  * The service that responds to Gradle's request to load and store results for a given
@@ -67,11 +69,12 @@ internal class GcpBuildCacheService(
         if (writer.size == 0L) return // do not store empty entries into the cache
         logger.info("Storing ${key.blobKey()}")
         val cacheKey = key.blobKey()
-        val output = ByteArrayOutputStream()
-        output.use {
-            writer.writeTo(output)
-        }
-        storageService.store(cacheKey, output.toByteArray())
+
+        val incoming = PipedOutputStream()
+        writer.writeTo(incoming)
+        val contents = PipedInputStream(incoming)
+
+        storageService.store(cacheKey, contents, writer.size)
     }
 
     fun validateConfiguration() {

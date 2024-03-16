@@ -30,7 +30,7 @@ class FileStorageServiceTest {
         storageService.use {
             val cacheKey = "test-store.txt"
             val contents = "The quick brown fox jumped over the lazy dog"
-            val result = storageService.store(cacheKey, contents.toByteArray(Charsets.UTF_8))
+            val result = storageService.store(cacheKey, contents)
             assert(result)
         }
     }
@@ -45,7 +45,7 @@ class FileStorageServiceTest {
         storageService.use {
             val cacheKey = "test-load.txt"
             val contents = "The quick brown fox jumped over the lazy dog"
-            val bytes = contents.toByteArray(Charsets.UTF_8)
+            val bytes = contents
             storageService.store(cacheKey, bytes)
             val input = storageService.load(cacheKey)!!
             val result = String(input.readAllBytes(), Charsets.UTF_8)
@@ -63,7 +63,7 @@ class FileStorageServiceTest {
         storageService.use {
             val cacheKey = "test-store-no-push.txt"
             val contents = "The quick brown fox jumped over the lazy dog"
-            val result = storageService.store(cacheKey, contents.toByteArray(Charsets.UTF_8))
+            val result = storageService.store(cacheKey, contents)
             assert(!result)
         }
     }
@@ -78,12 +78,18 @@ class FileStorageServiceTest {
         storageService.use {
             val cacheKey = "test-store-disabled.txt"
             val contents = "The quick brown fox jumped over the lazy dog"
-            val result = storageService.store(cacheKey, contents.toByteArray(Charsets.UTF_8))
+            val result = storageService.store(cacheKey, contents)
             assert(!result)
         }
     }
 
     companion object {
         private const val BUCKET_NAME = "cache"
+
+        private fun StorageService.store(cacheKey: String, contents: String): Boolean {
+            return contents.byteInputStream(Charsets.UTF_8).use {
+                store(cacheKey, it, it.available().toLong())
+            }
+        }
     }
 }

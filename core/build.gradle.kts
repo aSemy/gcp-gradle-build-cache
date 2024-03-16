@@ -17,6 +17,7 @@
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
+//    `embedded-kotlin`
 }
 
 dependencies {
