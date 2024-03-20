@@ -20,8 +20,6 @@ plugins {
     id("signing")
     id("bundle")
     alias(libs.plugins.gradle.publish)
-//    `embedded-kotlin`
-//    `java-gradle-plugin`
     alias(libs.plugins.kotlin.jvm)
 }
 
@@ -63,7 +61,7 @@ gradlePlugin {
 }
 
 group = "androidx.build.gradle.s3buildcache"
-version = "1.0.0-alpha04"
+version = "1.0.0-alpha05"
 
 testing {
     suites {
@@ -100,14 +98,6 @@ tasks.named<Task>("check") {
 }
 
 tasks.withType<Sign>().configureEach {
-    val signingKeyPresent = project.hasProperty("signing.keyId")
-    onlyIf { signingKeyPresent }
-}
-
-publishing {
-    repositories {
-        maven(file("/Users/dev/projects/external/gradle-plugins/gcp-gradle-build-cache/build/dev-mvn")) {
-            name = "DevMvn"
-        }
-    }
+    val signingKeyIdPresent = project.hasProperty("signing.keyId")
+    onlyIf("signing.keyId is present") { signingKeyIdPresent }
 }

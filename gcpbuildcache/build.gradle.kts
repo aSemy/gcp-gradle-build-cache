@@ -21,7 +21,6 @@ plugins {
     id("bundle")
     alias(libs.plugins.gradle.publish)
     alias(libs.plugins.kotlin.jvm)
-//    `embedded-kotlin`
 }
 
 dependencies {
@@ -90,14 +89,6 @@ tasks.named<Task>("check") {
 }
 
 tasks.withType<Sign>().configureEach {
-    val signingKeyPresent = project.hasProperty("signing.keyId")
-    onlyIf { signingKeyPresent }
-}
-
-publishing {
-    repositories {
-        maven(file("/Users/dev/projects/external/gradle-plugins/gcp-gradle-build-cache/build/dev-mvn")) {
-            name = "DevMvn"
-        }
-    }
+    val signingKeyIdPresent = project.hasProperty("signing.keyId")
+    onlyIf("signing.keyId is present") { signingKeyIdPresent }
 }
