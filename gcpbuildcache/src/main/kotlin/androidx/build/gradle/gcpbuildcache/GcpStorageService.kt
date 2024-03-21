@@ -59,7 +59,7 @@ internal class GcpStorageService(
         return load(storageOptions, blobId, sizeThreshold)
     }
 
-    override fun store(cacheKey: String, contents: InputStream, size: Long): Boolean {
+    override fun store(cacheKey: String, contents: InputStream, contentsLength: Long): Boolean {
         if (!isEnabled) {
             logger.info("Not Enabled")
             return false

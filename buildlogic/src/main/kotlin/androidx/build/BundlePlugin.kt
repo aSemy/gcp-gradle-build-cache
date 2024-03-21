@@ -19,26 +19,56 @@ package androidx.build
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.result.ResolvedArtifactResult
+import org.gradle.api.file.ArchiveOperations
+import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.bundling.Jar
+import org.gradle.kotlin.dsl.creating
+import org.gradle.kotlin.dsl.getValue
+import org.gradle.kotlin.dsl.named
+import org.gradle.kotlin.dsl.support.serviceOf
+import org.gradle.kotlin.dsl.withType
 import org.gradle.plugin.devel.tasks.PluginUnderTestMetadata
 
 class BundlePlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        val bundleInside = project.configurations.create("bundleInside") {
-            it.isTransitive = false
-            it.isVisible = false
-            it.isCanBeResolved = true
+
+
+        val bundleInside: Configuration by project.configurations.creating {
+//            isTransitive = false
+            isVisible = false
+            isCanBeResolved = false
+            isCanBeConsumed = false
+            isCanBeDeclared = true
         }
-        project.afterEvaluate {
+
+        val bundleInsideResolver: Configuration by project.configurations.creating {
+            extendsFrom(bundleInside)
+            isTransitive = false
+            isVisible = false
+            isCanBeResolved = true
+            isCanBeConsumed = false
+            isCanBeDeclared = false
+        }
+
+        project.plugins.withType<JavaPlugin>().configureEach {
             project.configurations.getByName("compileOnly").extendsFrom(bundleInside)
-            project.configurations.getByName("testImplementation").extendsFrom(bundleInside)
-            val jarsToBundle = bundleInside.incoming.artifactView {  }.files
-            project.tasks.named("jar").configure { jarTask ->
-                jarTask as Jar
-                jarTask.from(project.provider { jarsToBundle.map { if (it.isDirectory) { it } else { project.zipTree(it) } } })
+//            project.configurations.getByName("testImplementation").extendsFrom(bundleInside)
+
+            project.tasks.named<Jar>("jar").configure { jarTask ->
+                val archives = project.serviceOf<ArchiveOperations>()
+                val classesToBundle = bundleInsideResolver.incoming.artifacts.resolvedArtifacts.map {
+                    it.map(ResolvedArtifactResult::getFile)
+                        .map { f ->
+                            if (f.isDirectory) f else archives.zipTree(f)
+                        }
+                }
+                jarTask.from(classesToBundle)
             }
-            project.tasks.withType(PluginUnderTestMetadata::class.java).configureEach {
-                it.pluginClasspath.from(jarsToBundle)
+
+            project.tasks.withType<PluginUnderTestMetadata>().configureEach {
+                it.pluginClasspath.from(bundleInsideResolver)
             }
         }
     }

@@ -20,12 +20,13 @@ plugins {
     id("signing")
     id("bundle")
     alias(libs.plugins.gradle.publish)
-    alias(libs.plugins.kotlin.jvm)
+    `embedded-kotlin`
 }
 
 dependencies {
     // Bundle core library directly as we only get to publish one jar per plugin in Gradle Plugin Portal
-    bundleInside(project(":core"))
+//    bundleInside(project(":core"))
+    implementation(project(":core"))
     implementation(platform(libs.amazon.bom))
     implementation(platform(libs.okhttp.bom))
     implementation(libs.retrofit.core)
@@ -37,6 +38,8 @@ dependencies {
     runtimeOnly(libs.amazon.sts) {
         because("Has to be on the classpath to be able to read credentials. See: https://github.com/aws/aws-sdk-java/issues/1324")
     }
+
+    testImplementation(testFixtures(project(":core")))
     testImplementation(libs.adobe.s3.mock) {
         // Classpath collisions
         exclude("ch.qos.logback", "logback-classic")
@@ -100,4 +103,10 @@ tasks.named<Task>("check") {
 tasks.withType<Sign>().configureEach {
     val signingKeyIdPresent = project.hasProperty("signing.keyId")
     onlyIf("signing.keyId is present") { signingKeyIdPresent }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(11)
+    }
 }

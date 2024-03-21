@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 The Android Open Source Project
+ * Copyright 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,16 @@
  * limitations under the License.
  *
  */
-rootProject.name = "gcp-gradle-build-cache"
+package androidx.build.gradle.core
 
-pluginManagement {
-    includeBuild("buildlogic")
-    repositories {
-        mavenCentral()
-        gradlePluginPortal()
+import java.nio.charset.Charset
+
+fun StorageService.store(
+    cacheKey: String,
+    contents: String,
+    charset: Charset = Charsets.UTF_8,
+): Boolean {
+    return contents.byteInputStream(charset).use {
+        store(cacheKey, it, it.available().toLong())
     }
 }
-
-dependencyResolutionManagement {
-    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
-    repositories {
-        mavenCentral()
-    }
-}
-
-
-include(":core")
-include(":gcpbuildcache")
-include(":s3buildcache")
-include(":test-benchmarks")

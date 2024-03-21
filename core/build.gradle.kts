@@ -16,15 +16,15 @@
  */
 
 plugins {
-    alias(libs.plugins.kotlin.jvm)
-//    `embedded-kotlin`
+    `embedded-kotlin`
+    `java-test-fixtures`
 }
 
 dependencies {
-    implementation(gradleApi())
+    compileOnly(gradleApi())
     implementation(platform(libs.okhttp.bom))
-    api(platform(libs.kotlin.bom))
-    api(libs.kotlin.stdlib)
+//    api(platform(libs.kotlin.bom))
+//    api(libs.kotlin.stdlib)
     implementation(libs.retrofit.core)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.google.gson)
@@ -37,5 +37,11 @@ testing {
         val test by getting(JvmTestSuite::class) {
             useJUnit()
         }
+    }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(11)
     }
 }

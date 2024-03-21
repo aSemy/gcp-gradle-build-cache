@@ -45,8 +45,7 @@ class FileStorageServiceTest {
         storageService.use {
             val cacheKey = "test-load.txt"
             val contents = "The quick brown fox jumped over the lazy dog"
-            val bytes = contents
-            storageService.store(cacheKey, bytes)
+            storageService.store(cacheKey, contents)
             val input = storageService.load(cacheKey)!!
             val result = String(input.readAllBytes(), Charsets.UTF_8)
             assert(result == contents)
@@ -85,11 +84,5 @@ class FileStorageServiceTest {
 
     companion object {
         private const val BUCKET_NAME = "cache"
-
-        private fun StorageService.store(cacheKey: String, contents: String): Boolean {
-            return contents.byteInputStream(Charsets.UTF_8).use {
-                store(cacheKey, it, it.available().toLong())
-            }
-        }
     }
 }

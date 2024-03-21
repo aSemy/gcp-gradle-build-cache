@@ -16,8 +16,12 @@
  */
 
 plugins {
-    id("java-gradle-plugin")
+    `java-gradle-plugin`
     `embedded-kotlin`
+}
+
+dependencies {
+    implementation(gradleKotlinDsl())
 }
 
 gradlePlugin {
@@ -26,5 +30,11 @@ gradlePlugin {
             id = "bundle"
             implementationClass = "androidx.build.BundlePlugin"
         }
+    }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(11)
     }
 }

@@ -20,12 +20,14 @@ plugins {
     id("signing")
     id("bundle")
     alias(libs.plugins.gradle.publish)
-    alias(libs.plugins.kotlin.jvm)
+//    alias(libs.plugins.kotlin.jvm)
+    `embedded-kotlin`
 }
 
 dependencies {
     // Bundle core library directly as we only get to publish one jar per plugin in Gradle Plugin Portal
-    bundleInside(project(":core"))
+//    bundleInside(project(":core"))
+    implementation(project(":core"))
     implementation(platform(libs.okhttp.bom))
     implementation(libs.google.cloud.storage)
     implementation(libs.google.protobuf.java)
@@ -33,6 +35,8 @@ dependencies {
     implementation(libs.retrofit.converter.gson)
     implementation(libs.google.gson)
     implementation(libs.okhttp)
+
+    testImplementation(testFixtures(project(":core")))
 }
 
 gradlePlugin {
@@ -91,4 +95,10 @@ tasks.named<Task>("check") {
 tasks.withType<Sign>().configureEach {
     val signingKeyIdPresent = project.hasProperty("signing.keyId")
     onlyIf("signing.keyId is present") { signingKeyIdPresent }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(11)
+    }
 }

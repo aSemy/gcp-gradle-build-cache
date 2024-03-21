@@ -17,7 +17,7 @@
 
 package androidx.build.gradle.gcpbuildcache
 
-import androidx.build.gradle.core.StorageService
+import androidx.build.gradle.core.store
 import org.junit.Assume.assumeNotNull
 import org.junit.Test
 import java.io.File
@@ -154,12 +154,5 @@ class GcpStorageServiceTest {
 
         // The Bucket Name
         private const val BUCKET_NAME = "androidx-gradle-build-cache-test"
-
-        private fun StorageService.store(cacheKey: String, contents: String): Boolean {
-            val bytes = contents.byteInputStream(Charsets.UTF_8)
-            return bytes.use { input ->
-                store(cacheKey, input, bytes.available().toLong())
-            }
-        }
     }
 }

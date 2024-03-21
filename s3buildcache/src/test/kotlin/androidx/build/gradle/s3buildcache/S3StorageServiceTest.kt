@@ -17,7 +17,6 @@
 
 package androidx.build.gradle.s3buildcache
 
-import androidx.build.gradle.core.StorageService
 import com.adobe.testing.s3mock.S3MockApplication
 import com.adobe.testing.s3mock.S3MockApplication.*
 import okio.utf8Size
@@ -27,6 +26,7 @@ import org.junit.Test
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
+import androidx.build.gradle.core.store
 import java.net.URI
 
 /**
@@ -177,11 +177,5 @@ class S3StorageServiceTest {
         private const val REGION = "us-east-1"
         private const val BUCKET_NAME = "bucket-name"
         private const val SIZE_THRESHOLD = 50 * 1024 * 1024L
-
-        private fun StorageService.store(cacheKey: String, contents: String): Boolean {
-            return contents.byteInputStream(Charsets.UTF_8).use {
-                store(cacheKey, it, it.available().toLong())
-            }
-        }
     }
 }
