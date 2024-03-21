@@ -40,7 +40,6 @@ internal class GcpStorageService(
     gcpCredentials: GcpCredentials,
     messageOnAuthenticationFailure: String,
     override val isPush: Boolean,
-    override val isEnabled: Boolean,
     private val sizeThreshold: Long = BLOB_SIZE_THRESHOLD,
     private val clock: Clock = Clock.systemDefaultZone(),
 ) : StorageService {
@@ -50,21 +49,23 @@ internal class GcpStorageService(
     }
 
     override fun load(cacheKey: String): InputStream? {
-        if (!isEnabled) {
-            logger.info("Not Enabled")
-            return null
-        }
         val blobId = BlobId.of(bucketName, cacheKey)
         logger.info("Loading $cacheKey from ${blobId.name}")
         return load(storageOptions, blobId, sizeThreshold)
     }
 
-    override fun store(cacheKey: String, contents: InputStream, contentsLength: Long): Boolean {
-        if (!isEnabled) {
-            logger.info("Not Enabled")
+    override fun store(cacheKey: String, contents: ByteArray): Boolean {
+        if (!isPush) {
+            logger.info("No push support")
             return false
         }
+        val blobId = BlobId.of(bucketName, cacheKey)
 
+        logger.info("Storing $cacheKey into ${blobId.name}")
+        return Companion.store(storageOptions, blobId, contents)
+    }
+
+    override fun store(cacheKey: String, contents: InputStream, contentsLength: Long): Boolean {
         if (!isPush) {
             logger.info("No push support")
             return false
@@ -76,10 +77,6 @@ internal class GcpStorageService(
     }
 
     override fun delete(cacheKey: String): Boolean {
-        if (!isEnabled) {
-            return false
-        }
-
         if (!isPush) {
             return false
         }
@@ -143,6 +140,18 @@ internal class GcpStorageService(
             } catch (storageException: StorageException) {
                 logger.debug("Unable to load Blob ($blobId)", storageException)
                 null
+            }
+        }
+
+        private fun store(storage: StorageOptions?, blobId: BlobId, contents: ByteArray): Boolean {
+            if (storage == null) return false
+            val blobInfo = BlobInfo.newBuilder(blobId).build()
+            return try {
+                storage.service.createFrom(blobInfo, contents.inputStream())
+                true
+            } catch (storageException: StorageException) {
+                logger.debug("Unable to store Blob ($blobId)", storageException)
+                false
             }
         }
 

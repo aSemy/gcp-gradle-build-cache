@@ -1,5 +1,12 @@
 rootProject.name = "buildlogic"
 
+pluginManagement {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
 dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
@@ -7,12 +14,6 @@ dependencyResolutionManagement {
         }
     }
     repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
-    repositories {
-        mavenCentral()
-    }
-}
-
-pluginManagement {
     repositories {
         mavenCentral()
         gradlePluginPortal()

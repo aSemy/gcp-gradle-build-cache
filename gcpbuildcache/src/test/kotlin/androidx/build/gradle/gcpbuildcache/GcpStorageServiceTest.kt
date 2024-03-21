@@ -37,7 +37,6 @@ class GcpStorageServiceTest {
             gcpCredentials = ExportedKeyGcpCredentials(File(serviceAccountPath!!)),
             messageOnAuthenticationFailure = "Please re-authenticate",
             isPush = true,
-            isEnabled = true,
             sizeThreshold = 0L
         )
         storageService.use {
@@ -58,7 +57,6 @@ class GcpStorageServiceTest {
             gcpCredentials = ExportedKeyGcpCredentials(File(serviceAccountPath!!)),
             messageOnAuthenticationFailure = "Please re-authenticate",
             isPush = true,
-            isEnabled = true,
             sizeThreshold = 0L
         )
         storageService.use {
@@ -82,7 +80,6 @@ class GcpStorageServiceTest {
             gcpCredentials = ExportedKeyGcpCredentials(File(serviceAccountPath!!)),
             messageOnAuthenticationFailure = "Please re-authenticate",
             isPush = false,
-            isEnabled = true,
             sizeThreshold = 0L
         )
         storageService.use {
@@ -102,7 +99,6 @@ class GcpStorageServiceTest {
             gcpCredentials = ExportedKeyGcpCredentials(File(serviceAccountPath!!)),
             messageOnAuthenticationFailure = "Please re-authenticate",
             isPush = true,
-            isEnabled = true,
             sizeThreshold = 0L
         )
         val readOnlyStorageService = GcpStorageService(
@@ -111,7 +107,6 @@ class GcpStorageServiceTest {
             gcpCredentials = ExportedKeyGcpCredentials(File(serviceAccountPath)),
             messageOnAuthenticationFailure = "Please re-authenticate",
             isPush = false,
-            isEnabled = true,
             sizeThreshold = 0L
         )
         storageService.use {
@@ -128,25 +123,25 @@ class GcpStorageServiceTest {
         }
     }
 
-    @Test
-    fun testLoadBlob_disabled() {
-        assumeNotNull(serviceAccountPath)
-        val storageService = GcpStorageService(
-            projectId = PROJECT_ID,
-            bucketName = BUCKET_NAME,
-            gcpCredentials = ExportedKeyGcpCredentials(File(serviceAccountPath!!)),
-            messageOnAuthenticationFailure = "Please re-authenticate",
-            isPush = true,
-            isEnabled = false,
-            sizeThreshold = 0L
-        )
-        storageService.use {
-            val cacheKey = "test-store-disabled.txt"
-            val contents = "The quick brown fox jumped over the lazy dog"
-            val result = storageService.store(cacheKey, contents)
-            assert(!result)
-        }
-    }
+//    @Test
+//    fun testLoadBlob_disabled() {
+//        assumeNotNull(serviceAccountPath)
+//        val storageService = GcpStorageService(
+//            projectId = PROJECT_ID,
+//            bucketName = BUCKET_NAME,
+//            gcpCredentials = ExportedKeyGcpCredentials(File(serviceAccountPath!!)),
+//            messageOnAuthenticationFailure = "Please re-authenticate",
+//            isPush = true,
+//            isEnabled = false,
+//            sizeThreshold = 0L
+//        )
+//        storageService.use {
+//            val cacheKey = "test-store-disabled.txt"
+//            val contents = "The quick brown fox jumped over the lazy dog"
+//            val result = storageService.store(cacheKey, contents)
+//            assert(!result)
+//        }
+//    }
 
     companion object {
         // Project ID

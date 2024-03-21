@@ -27,16 +27,11 @@ import java.nio.file.Files
 class FileSystemStorageService(
     override val bucketName: String,
     override val isPush: Boolean,
-    override val isEnabled: Boolean
 ) : StorageService {
 
     private val location = Files.createTempDirectory("tmp$bucketName").toFile()
 
     override fun load(cacheKey: String): InputStream? {
-        if (!isEnabled) {
-            return null
-        }
-
         val file = File(location, cacheKey)
         return if (file.exists() && file.isFile) {
             file.inputStream()
@@ -45,11 +40,20 @@ class FileSystemStorageService(
         }
     }
 
-    override fun store(cacheKey: String, contents: InputStream, contentsLength: Long): Boolean {
-        if (!isEnabled) {
+    override fun store(cacheKey: String, contents: ByteArray): Boolean {
+        if (!isPush) {
             return false
         }
 
+        val file = File(location, cacheKey)
+        val output = file.outputStream()
+        output.use {
+            output.write(contents)
+        }
+        return true
+    }
+
+    override fun store(cacheKey: String, contents: InputStream, contentsLength: Long): Boolean {
         if (!isPush) {
             return false
         }
@@ -62,10 +66,6 @@ class FileSystemStorageService(
     }
 
     override fun delete(cacheKey: String): Boolean {
-        if (!isEnabled) {
-            return false
-        }
-
         if (!isPush) {
             return false
         }
@@ -84,7 +84,7 @@ class FileSystemStorageService(
 
     companion object {
         private fun File.deleteRecursively() {
-            val files = listFiles()
+            val files = listFiles().orEmpty()
             for (file in files) {
                 if (file.isFile) {
                     file.delete()

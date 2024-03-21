@@ -42,9 +42,8 @@ class S3BuildCacheServiceFactory : BuildCacheServiceFactory<S3BuildCache> {
             region = buildCache.region,
             bucketName = buildCache.bucketName,
             isPush = buildCache.isPush,
-            isEnabled = buildCache.isEnabled,
             reducedRedundancy = buildCache.reducedRedundancy,
-            credentials = buildCache.credentials
+            credentials = buildCache.credentials,
         )
         service.validateConfiguration()
         return service

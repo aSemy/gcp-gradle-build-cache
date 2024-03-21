@@ -16,18 +16,16 @@
  */
 
 plugins {
-    id("maven-publish")
-    id("signing")
-    id("bundle")
-    alias(libs.plugins.gradle.publish)
-//    alias(libs.plugins.kotlin.jvm)
-    `embedded-kotlin`
+    id("androidx.build.kotlin-jvm-gradle-plugin")
 }
+
+group = "androidx.build.gradle.gcpbuildcache"
+version = "1.0.0-beta07"
 
 dependencies {
     // Bundle core library directly as we only get to publish one jar per plugin in Gradle Plugin Portal
-//    bundleInside(project(":core"))
-    implementation(project(":core"))
+    bundleInside(project(":core"))
+//    implementation(project(":core"))
     implementation(platform(libs.okhttp.bom))
     implementation(libs.google.cloud.storage)
     implementation(libs.google.protobuf.java)
@@ -53,52 +51,5 @@ gradlePlugin {
             implementationClass = "androidx.build.gradle.gcpbuildcache.GcpGradleBuildCachePlugin"
             tags = listOf("buildcache", "gcp", "caching")
         }
-    }
-}
-
-group = "androidx.build.gradle.gcpbuildcache"
-version = "1.0.0-beta07"
-
-testing {
-    suites {
-        // Configure built-in test suite.
-        val test by getting(JvmTestSuite::class) {
-            useJUnit()
-        }
-
-        // Create a new functional test suite.
-        val functionalTest by registering(JvmTestSuite::class) {
-            useJUnit()
-
-            dependencies {
-                // functionalTest test suite depends on the production code in tests
-                implementation(project())
-            }
-
-            targets {
-                all {
-                    // This test suite should run after the built-in test suite has run its tests
-                    testTask.configure { shouldRunAfter(test) }
-                }
-            }
-        }
-    }
-}
-
-gradlePlugin.testSourceSets(sourceSets["functionalTest"])
-
-tasks.named<Task>("check") {
-    // Include functionalTest as part of the check lifecycle
-    dependsOn(testing.suites.named("functionalTest"))
-}
-
-tasks.withType<Sign>().configureEach {
-    val signingKeyIdPresent = project.hasProperty("signing.keyId")
-    onlyIf("signing.keyId is present") { signingKeyIdPresent }
-}
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(11)
     }
 }

@@ -17,6 +17,7 @@
 
 package androidx.build.gradle.s3buildcache
 
+import androidx.build.gradle.core.randomPort
 import com.adobe.testing.s3mock.S3MockApplication
 import com.adobe.testing.s3mock.S3MockApplication.*
 import okio.utf8Size
@@ -39,12 +40,16 @@ class S3StorageServiceTest {
 
     @Before
     fun setUp() {
+        val port = randomPort()
+
         val serverConfig = mapOf(
             PROP_INITIAL_BUCKETS to BUCKET_NAME,
-            PROP_SILENT to true
+            PROP_SILENT to true,
+            PROP_HTTP_PORT to port,
+            PROP_HTTPS_PORT to RANDOM_PORT,
         )
         s3MockApplication = start(serverConfig)
-        val serviceEndpoint = "http://localhost:$DEFAULT_HTTP_PORT"
+        val serviceEndpoint = "http://localhost:$port"
         client = S3Client.builder()
             .region(Region.of(REGION))
             .credentialsProvider(AnonymousCredentialsProvider.create())
@@ -66,7 +71,6 @@ class S3StorageServiceTest {
             bucketName = BUCKET_NAME,
             client = client,
             isPush = true,
-            isEnabled = true,
             reducedRedundancy = true,
             sizeThreshold = SIZE_THRESHOLD
         )
@@ -86,7 +90,6 @@ class S3StorageServiceTest {
             bucketName = BUCKET_NAME,
             client = client,
             isPush = true,
-            isEnabled = true,
             reducedRedundancy = true,
             sizeThreshold = SIZE_THRESHOLD
         )
@@ -108,7 +111,6 @@ class S3StorageServiceTest {
             bucketName = BUCKET_NAME,
             client = client,
             isPush = false,
-            isEnabled = true,
             reducedRedundancy = true,
             sizeThreshold = SIZE_THRESHOLD
         )
@@ -127,7 +129,6 @@ class S3StorageServiceTest {
             bucketName = BUCKET_NAME,
             client = client,
             isPush = true,
-            isEnabled = true,
             reducedRedundancy = true,
             sizeThreshold = SIZE_THRESHOLD
         )
@@ -136,7 +137,6 @@ class S3StorageServiceTest {
             bucketName = BUCKET_NAME,
             client = client,
             isPush = false,
-            isEnabled = true,
             reducedRedundancy = true,
             sizeThreshold = SIZE_THRESHOLD
         )
@@ -153,27 +153,26 @@ class S3StorageServiceTest {
         }
     }
 
-    @Test
-    fun testLoadBlob_disabled() {
-        val storageService = S3StorageService(
-            region = REGION,
-            bucketName = BUCKET_NAME,
-            client = client,
-            isPush = true,
-            isEnabled = false,
-            reducedRedundancy = true,
-            sizeThreshold = SIZE_THRESHOLD
-        )
-        storageService.use {
-            val cacheKey = "test-store-disabled.txt"
-            val contents = "The quick brown fox jumps over the lazy dog"
-            val result = storageService.store(cacheKey, contents)
-            assert(!result)
-        }
-    }
+//    @Test
+//    fun testLoadBlob_disabled() {
+//        val storageService = S3StorageService(
+//            region = REGION,
+//            bucketName = BUCKET_NAME,
+//            client = client,
+//            isPush = true,
+//            isEnabled = false,
+//            reducedRedundancy = true,
+//            sizeThreshold = SIZE_THRESHOLD
+//        )
+//        storageService.use {
+//            val cacheKey = "test-store-disabled.txt"
+//            val contents = "The quick brown fox jumps over the lazy dog"
+//            val result = storageService.store(cacheKey, contents)
+//            assert(!result)
+//        }
+//    }
 
     companion object {
-
         private const val REGION = "us-east-1"
         private const val BUCKET_NAME = "bucket-name"
         private const val SIZE_THRESHOLD = 50 * 1024 * 1024L

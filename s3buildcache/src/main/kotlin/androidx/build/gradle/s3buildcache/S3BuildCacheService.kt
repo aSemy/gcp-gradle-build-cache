@@ -19,6 +19,7 @@ package androidx.build.gradle.s3buildcache
 
 import androidx.build.gradle.core.FileSystemStorageService
 import androidx.build.gradle.core.blobKey
+import okio.Buffer
 import org.gradle.api.logging.Logging
 import org.gradle.caching.BuildCacheEntryReader
 import org.gradle.caching.BuildCacheEntryWriter
@@ -27,8 +28,8 @@ import org.gradle.caching.BuildCacheService
 import software.amazon.awssdk.auth.credentials.*
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
-import java.io.PipedInputStream
-import java.io.PipedOutputStream
+import java.io.ByteArrayOutputStream
+import kotlin.concurrent.thread
 
 /**
  * The service that responds to Gradle's request to load and store results for a given
@@ -44,18 +45,18 @@ class S3BuildCacheService(
     region: String,
     bucketName: String,
     isPush: Boolean,
-    isEnabled: Boolean,
     reducedRedundancy: Boolean,
-    inTestMode: Boolean = false
+    val mode: String = "byte-array",
+    inTestMode: Boolean = false,
 ) : BuildCacheService {
 
     private val client by lazy {
         clientOptions(credentials(credentials), region)
     }
     private val storageService = if (inTestMode) {
-        FileSystemStorageService(bucketName, isPush, isEnabled)
+        FileSystemStorageService(bucketName, isPush)
     } else {
-        S3StorageService(bucketName, isPush, isEnabled, client, region, reducedRedundancy)
+        S3StorageService(bucketName, isPush, client, region, reducedRedundancy)
     }
 
     override fun load(key: BuildCacheKey, reader: BuildCacheEntryReader): Boolean {
@@ -67,15 +68,49 @@ class S3BuildCacheService(
     }
 
     override fun store(key: BuildCacheKey, writer: BuildCacheEntryWriter) {
+        when (mode) {
+            "byte-array" -> storeByteArray(key, writer)
+            "piped" -> storePiped(key, writer)
+            "buffer" -> storeBuffer(key, writer)
+            else -> error("Unknown mode $mode")
+        }
+    }
+
+    private fun storeByteArray(key: BuildCacheKey, writer: BuildCacheEntryWriter) {
+        if (writer.size == 0L) return // do not store empty entries into the cache
+        logger.info("Storing ${key.blobKey()}")
+        val cacheKey = key.blobKey()
+        val output = ByteArrayOutputStream()
+        output.use {
+            writer.writeTo(output)
+        }
+        storageService.store(cacheKey, output.toByteArray())
+    }
+
+    private fun storePiped(key: BuildCacheKey, writer: BuildCacheEntryWriter) {
         if (writer.size == 0L) return // do not store empty entries into the cache
         logger.info("Storing ${key.blobKey()}")
         val cacheKey = key.blobKey()
 
-        val incoming = PipedOutputStream()
-        writer.writeTo(incoming)
-        val contents = PipedInputStream(incoming)
+        val incoming = java.io.PipedOutputStream()
+        val contents = java.io.PipedInputStream(incoming)
+
+        thread {
+            writer.writeTo(incoming)
+        }
 
         storageService.store(cacheKey, contents, writer.size)
+    }
+
+    private fun storeBuffer(key: BuildCacheKey, writer: BuildCacheEntryWriter) {
+        if (writer.size == 0L) return // do not store empty entries into the cache
+        logger.info("Storing ${key.blobKey()}")
+        val cacheKey = key.blobKey()
+
+        val buffer = Buffer()
+        writer.writeTo(buffer.outputStream())
+
+        storageService.store(cacheKey, buffer.inputStream(), writer.size)
     }
 
     override fun close() {

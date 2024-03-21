@@ -42,15 +42,14 @@ internal class GcpBuildCacheService(
     gcpCredentials: GcpCredentials,
     messageOnAuthenticationFailure: String,
     isPush: Boolean,
-    isEnabled: Boolean,
     inTestMode: Boolean = false
 ) : BuildCacheService {
 
     private val storageService = if (inTestMode) {
         // Use an implementation backed by the File System when in test mode.
-        FileSystemStorageService(bucketName, isPush, isEnabled)
+        FileSystemStorageService(bucketName, isPush)
     } else {
-        GcpStorageService(projectId, bucketName, gcpCredentials, messageOnAuthenticationFailure, isPush, isEnabled)
+        GcpStorageService(projectId, bucketName, gcpCredentials, messageOnAuthenticationFailure, isPush)
     }
 
     override fun close() {
@@ -69,13 +68,24 @@ internal class GcpBuildCacheService(
         if (writer.size == 0L) return // do not store empty entries into the cache
         logger.info("Storing ${key.blobKey()}")
         val cacheKey = key.blobKey()
-
-        val incoming = PipedOutputStream()
-        writer.writeTo(incoming)
-        val contents = PipedInputStream(incoming)
-
-        storageService.store(cacheKey, contents, writer.size)
+        val output = ByteArrayOutputStream()
+        output.use {
+            writer.writeTo(output)
+        }
+        storageService.store(cacheKey, output.toByteArray())
     }
+
+//    override fun store(key: BuildCacheKey, writer: BuildCacheEntryWriter) {
+//        if (writer.size == 0L) return // do not store empty entries into the cache
+//        logger.info("Storing ${key.blobKey()}")
+//        val cacheKey = key.blobKey()
+//
+//        val incoming = java.io.PipedOutputStream()
+//        writer.writeTo(incoming)
+//        val contents = java.io.PipedInputStream(incoming)
+//
+//        storageService.store(cacheKey, contents, writer.size)
+//    }
 
     fun validateConfiguration() {
         storageService.validateConfiguration()

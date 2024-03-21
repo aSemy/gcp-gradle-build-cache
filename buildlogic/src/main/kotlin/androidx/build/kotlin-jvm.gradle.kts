@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 The Android Open Source Project
+ * Copyright 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,12 @@
  * limitations under the License.
  *
  */
+package androidx.build
 
 plugins {
-    id("androidx.build.kotlin-jvm")
-    `java-test-fixtures`
+    kotlin("jvm")
 }
 
-dependencies {
-    compileOnly(gradleApi())
-    implementation(platform(libs.okhttp.bom))
-    implementation(libs.retrofit.core)
-    implementation(libs.retrofit.converter.gson)
-    implementation(libs.google.gson)
-    implementation(libs.okhttp)
-}
-
-testing {
-    suites {
-        // Configure the built-in test suite
-        val test by getting(JvmTestSuite::class) {
-            useJUnit()
-        }
-    }
+kotlin {
+    jvmToolchain(11)
 }

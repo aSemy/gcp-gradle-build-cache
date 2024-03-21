@@ -34,7 +34,6 @@ import kotlin.io.path.outputStream
 class S3StorageService(
     override val bucketName: String,
     override val isPush: Boolean,
-    override val isEnabled: Boolean,
     private val client: S3Client,
     private val region: String,
     private val reducedRedundancy: Boolean,
@@ -42,11 +41,6 @@ class S3StorageService(
 ) : StorageService {
 
     override fun load(cacheKey: String): InputStream? {
-        if (!isEnabled) {
-            logger.info("Not Enabled")
-            return null
-        }
-
         val request = GetObjectRequest.builder()
             .bucket(bucketName)
             .key(cacheKey)
@@ -55,12 +49,27 @@ class S3StorageService(
         return load(client, request, sizeThreshold)
     }
 
-    override fun store(cacheKey: String, contents: InputStream, contentsLength: Long): Boolean {
-        if (!isEnabled) {
-            logger.info("Not Enabled")
+    override fun store(cacheKey: String, contents: ByteArray): Boolean {
+        if (!isPush) {
+            logger.info("No push support")
             return false
         }
 
+        if (contents.size > sizeThreshold) {
+            logger.info("Cache item $cacheKey size is ${contents.size} and it exceeds $sizeThreshold. Will skip storing")
+            return false
+        }
+
+        val request = PutObjectRequest.builder()
+            .bucket(bucketName)
+            .key(cacheKey)
+            .storageClass(if (reducedRedundancy) REDUCED_REDUNDANCY else STANDARD)
+            .build()
+        logger.info("Storing $cacheKey via $request")
+        return Companion.store(client, request, contents)
+    }
+
+    override fun store(cacheKey: String, contents: InputStream, contentsLength: Long): Boolean {
         if (!isPush) {
             logger.info("No push support")
             return false
@@ -81,11 +90,6 @@ class S3StorageService(
     }
 
     override fun delete(cacheKey: String): Boolean {
-        if (!isEnabled) {
-            logger.info("Not Enabled")
-            return false
-        }
-
         if (!isPush) {
             logger.info("No push support")
             return false
@@ -149,6 +153,20 @@ class S3StorageService(
             } catch (e: Exception) {
                 logger.debug("Unable to load $request", e)
                 null
+            }
+        }
+
+        private fun store(
+            client: S3Client,
+            request: PutObjectRequest,
+            contents: ByteArray
+        ): Boolean {
+            return try {
+                client.putObject(request, RequestBody.fromBytes(contents))
+                true
+            } catch (e: Exception) {
+                logger.debug("Unable to store $request", e)
+                false
             }
         }
 

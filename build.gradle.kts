@@ -16,7 +16,6 @@
  */
 
 plugins {
-//    alias(libs.plugins.kotlin.jvm) apply false
     base
-    `embedded-kotlin` apply false
+    kotlin("jvm") version embeddedKotlinVersion apply false
 }

@@ -16,21 +16,12 @@
  */
 
 plugins {
-    `java-gradle-plugin`
-    `embedded-kotlin`
+    `kotlin-dsl`
 }
 
 dependencies {
-    implementation(gradleKotlinDsl())
-}
-
-gradlePlugin {
-    plugins {
-        create("bundlePlugin") {
-            id = "bundle"
-            implementationClass = "androidx.build.BundlePlugin"
-        }
-    }
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:$embeddedKotlinVersion")
+    implementation("com.gradle.publish:plugin-publish-plugin:1.2.1")
 }
 
 java {

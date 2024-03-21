@@ -16,7 +16,7 @@
  */
 
 plugins {
-    `embedded-kotlin`
+    id("androidx.build.kotlin-jvm")
     id("org.jetbrains.kotlinx.benchmark") version "0.4.10"
     kotlin("plugin.allopen") version embeddedKotlinVersion
 }
@@ -38,6 +38,7 @@ dependencies {
     implementation(libs.amazon.s3)
     implementation(libs.amazon.sso)
 
+    implementation(testFixtures(project(":core")))
 
     implementation("org.jetbrains.kotlinx:kotlinx-benchmark-runtime:0.4.10")
 }
@@ -61,12 +62,16 @@ allOpen {
 //}
 
 benchmark {
+    targets {
+        register("main")
+    }
     configurations {
         named("main") {
             warmups = 3
             iterations = 10
             iterationTime = 3
             iterationTimeUnit = "s"
+//            advanced("jvmProfiler", "gc")
         }
 //        register("smoke") {
 //            include("<pattern of fully qualified name>")
